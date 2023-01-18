@@ -19,7 +19,7 @@ public class ContentsController {
         log.info("요청 url : {}", request.getParameter("url"));
 
         String url = request.getParameter("url");
-        Pattern pattern = Pattern.compile("\\www.(.*?)\\.");
+        Pattern pattern = Pattern.compile("\\bhttps(.*?)\\b/");
         Matcher matcher = pattern.matcher(url);
 
         if(matcher.find()){
