@@ -10,8 +10,12 @@ import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -70,6 +74,44 @@ public class ContentsControllerTest {
 
         String request = endPoint+"?url="+testUrl+"&"+format;
         System.out.println(request);
+    }
+
+    @Test
+    public void httpRequest() throws IOException {
+        String request = "https://www.youtube.com/oembed?url=https%3A//youtube.com/watch%3Fv%3DM3r2XDceM6A&format=json";
+
+        URL url = null;
+        HttpURLConnection connection = null;
+        StringBuilder sb = null;
+        BufferedReader br = null;
+
+        try{
+            url = new URL(request);
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-type", "application/json");
+            connection.connect();
+
+            br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+            sb = new StringBuilder();
+            String line;
+            while((line = br.readLine()) != null){
+                sb.append(line);
+            }
+
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }finally {
+            br.close();
+            connection.disconnect();
+        }
+
+        System.out.println(connection.getResponseCode());
+        System.out.println(sb);
+
     }
 
 
