@@ -32,7 +32,7 @@ public class ContentsControllerTest {
         Pattern pattern = Pattern.compile("\\bhttps(.*?)\\b/");
         Matcher matcher = pattern.matcher(testUrl);
         if(matcher.find()){
-            System.out.println(matcher.group(0));
+            System.out.println(matcher.group(0)); // https://www.youtube.com/
         }else System.out.println("null");
 
     }
@@ -56,23 +56,25 @@ public class ContentsControllerTest {
 
         for (Object o : jsonArray) {
             JSONObject object = (JSONObject) o;
-            if(
-                    url.equals(object.get("provider_url")) || (url+"/").equals(object.get("provider_url"))
-
-            ) {
+            try {
+                if (
+                        url.equals(object.get("provider_url"))
+                ) {
                 JSONArray endpointArray = (JSONArray) object.get("endpoints");
+                System.out.println("arra "+endpointArray);
                 JSONObject endpointObject = (JSONObject) endpointArray.get(0);
-
+                System.out.println("object "+endpointObject);
                 endPoint = endpointObject.get("url").toString();
 
-                break;
+                    break;
+                }
             }
-//            else{
-//                throw new ExceptionHandler();
-//            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
         }
 
-        String request = endPoint+"?url="+testUrl+"&"+format;
+        String request = endPoint+"?url="+testUrl+"&"+format; // https://www.youtube.com/oembed?url=https%3A//youtube.com/watch%3Fv%3DM3r2XDceM6A&format=json
         System.out.println(request);
     }
 
@@ -84,7 +86,7 @@ public class ContentsControllerTest {
         HttpURLConnection connection = null;
         StringBuilder sb = null;
         BufferedReader br = null;
-
+        JSONObject response = null;
         try{
             url = new URL(request);
             connection = (HttpURLConnection) url.openConnection();
@@ -96,21 +98,25 @@ public class ContentsControllerTest {
             br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
             sb = new StringBuilder();
             String line;
+
             while((line = br.readLine()) != null){
-                sb.append(line);
+                JSONParser jsonParser = new JSONParser();
+                response = (JSONObject) jsonParser.parse(line);
             }
 
         } catch (MalformedURLException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
+        } catch (ParseException e) {
+            e.printStackTrace();
+        } finally {
             br.close();
             connection.disconnect();
         }
 
         System.out.println(connection.getResponseCode());
-        System.out.println(sb);
+        System.out.println(response);
 
     }
 
