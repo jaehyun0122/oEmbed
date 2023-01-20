@@ -1,6 +1,6 @@
 package com.purpleio.backend.controller;
 
-import com.purpleio.backend.exception.ExceptionHandler;
+import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.assertj.core.api.Assertions;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -16,11 +16,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static org.junit.Assert.*;
 
 @SpringBootTest
 public class ContentsControllerTest {
@@ -38,15 +35,15 @@ public class ContentsControllerTest {
     }
 
     @Test
-    public void providerSearch() {
+    public void searchProvider() {
         ClassPathResource resource = new ClassPathResource("provider.json");
         Assertions.assertThat(resource.getFilename()).isEqualTo("provider.json");
     }
 
     @Test
-    public void getRequest() throws IOException, ParseException, ExceptionHandler {
-        String url = "https://www.youtube.com/";
-        String testUrl = "https://www.youtube.com/watch?v=Oxd2n27ZznE";
+    public void getRequest() throws IOException, ParseException {
+        String url = "https://www.twitter.com/";
+        String testUrl = "https://www.youtube.com/watch?v=dBD54EZIrZo";;
 
         ClassPathResource resource = new ClassPathResource("provider.json");
         JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
@@ -54,19 +51,23 @@ public class ContentsControllerTest {
         String endPoint = "";
         String format = "format=json";
 
-        for (Object o : jsonArray) {
+        out:for (Object o : jsonArray) {
             JSONObject object = (JSONObject) o;
             try {
-                if (
-                        url.equals(object.get("provider_url"))
-                ) {
+                // 스키마에서 패턴 찾아서
                 JSONArray endpointArray = (JSONArray) object.get("endpoints");
-                System.out.println("arra "+endpointArray);
                 JSONObject endpointObject = (JSONObject) endpointArray.get(0);
-                System.out.println("object "+endpointObject);
-                endPoint = endpointObject.get("url").toString();
+                JSONArray schemesArr = (JSONArray) endpointObject.get("schemes");
 
-                    break;
+                if(schemesArr != null){
+                    for (Object o1 : schemesArr) {
+                        if(Pattern.compile((String) o1).matcher(testUrl).find()){
+                            endPoint = endpointObject.get("url").toString();
+                            System.out.println(endPoint);
+
+                            break out;
+                        }
+                    }
                 }
             }
             catch (Exception e){
@@ -74,9 +75,45 @@ public class ContentsControllerTest {
             }
         }
 
-        String request = endPoint+"?url="+testUrl+"&"+format; // https://www.youtube.com/oembed?url=https%3A//youtube.com/watch%3Fv%3DM3r2XDceM6A&format=json
-        System.out.println(request);
     }
+
+    @Test
+    public void schemesMatch() throws IOException, ParseException {
+        String url = "https://www.youtube.com/watch?v=dBD54EZIrZo";
+        String regex = "https://*.youtube.com/watch*";
+
+        System.out.println(Pattern.compile(regex).matcher(url));
+//        String youtubeU = "https://www.youtube.com/watch?v=dBD54EZIrZo";
+//        String twitterU = "https://twitter.com/hellopolicy/status/867177144815804416";
+//
+        String[] youtube = {
+                "https://*.youtube.com/watch*",
+                "https://*.youtube.com/v/*",
+                "https://youtu.be/*",
+                "https://*.youtube.com/playlist?list=*",
+                "https://youtube.com/playlist?list=*",
+                "https://*.youtube.com/shorts*"
+        };
+//
+//        String[] twitter={
+//                "https://twitter.com/*",
+//                "https://twitter.com/*/status/*",
+//                "https://*.twitter.com/*/status/*"
+//        };
+//
+//        for(String pattern : twitter){
+//            Pattern pattern1 = Pattern.compile(pattern);
+//            Matcher matcher = pattern1.matcher(twitterU);
+//
+//            if(matcher.find()){
+//                System.out.println("matching");
+//                System.out.println(pattern);
+//                return;
+//            }
+//        }
+//        System.out.println("no matching");
+    }
+
 
     @Test
     public void httpRequest() throws IOException {
@@ -118,6 +155,22 @@ public class ContentsControllerTest {
         System.out.println(connection.getResponseCode());
         System.out.println(response);
 
+    }
+
+    @Test
+    public void pattern(){
+        String url = "https://twitter.com/hellopolicy/status/867177144815804416";
+        String[] strArr = new String[]{
+                "https://twitter.com/*",
+                "https://twitter.com/*/status/*",
+                "https://*.twitter.com/*/status/*"
+        };
+
+        for(String str : strArr){
+            if(Pattern.compile(str).matcher(url).find()){
+                System.out.println(str);
+            }
+        }
     }
 
 
