@@ -1,17 +1,15 @@
 package com.purpleio.backend.service;
 
 
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.regex.Matcher;
 
 public interface OembedService {
     String getProvider(String url) throws Exception;
-
-    Matcher getMatch(String url);
 
     String getRequest(String requestUrl, String provider) throws IOException, ParseException;
 
@@ -20,4 +18,8 @@ public interface OembedService {
     ArrayList<String> getProviderList() throws IOException, ParseException;
 
     Boolean isValidProvider(ArrayList<String> list, String provider);
+
+    JSONArray getJsonArr();
+
+    Boolean isValidUrl(String url);
 }

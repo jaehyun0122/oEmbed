@@ -1,19 +1,21 @@
 package com.purpleio.backend.service;
 
 import com.purpleio.backend.exception.GlobalExceptionHandler;
+import com.purpleio.backend.exception.InValidUrl;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -23,7 +25,14 @@ import java.util.regex.Pattern;
 @Slf4j
 public class OembedServiceImpl implements OembedService{
 
-    static final ClassPathResource resource = new ClassPathResource("provider.json");
+    @Override
+    public Boolean isValidUrl(String url) {
+        Matcher matcher = Pattern.compile("/(http(s)?:\\/\\/)([a-z0-9\\w]+\\.*)+[a-z0-9]{2,4}/gi").matcher(url);
+        if(matcher.find()){
+            return true;
+        }
+        return false;
+    }
 
     @Override
     public String getProvider(String url) throws Exception {
@@ -36,7 +45,7 @@ public class OembedServiceImpl implements OembedService{
             }else{
                 return group.substring(0, group.indexOf("."));
             }
-        } else throw new Exception();
+        } else throw new InValidUrl("유효하지 않은 URL 입니다.");
 
     }
 
@@ -49,8 +58,51 @@ public class OembedServiceImpl implements OembedService{
     }
 
     @Override
-    public ArrayList<String> getProviderList() throws IOException, ParseException {
-        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
+    public JSONArray getJsonArr() {
+        URL url = null;
+        try {
+            url = new URL("https://oembed.com/providers.json");
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
+        HttpURLConnection connection = null;
+        BufferedReader br = null;
+        StringBuffer sb = new StringBuffer();
+        JSONArray response = null;
+
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-type", "application/json");
+            connection.connect();
+
+            br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+            String line;
+
+            while((line = br.readLine()) != null){
+                sb.append(line);
+            }
+
+            JSONParser parser = new JSONParser();
+            response = (JSONArray) parser.parse(sb.toString());
+
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
+        }
+
+        return response;
+    }
+
+    @Override
+    public ArrayList<String> getProviderList() {
+        JSONArray jsonArray = getJsonArr();
         ArrayList<String> result = new ArrayList<>();
 
         for (Object o : jsonArray) {
@@ -64,19 +116,6 @@ public class OembedServiceImpl implements OembedService{
 
     /**
      *
-     * @param url
-     * @return https ~ / 까지
-     */
-    @Override
-    public Matcher getMatch(String url) {
-        Pattern pattern = Pattern.compile("\\bhttps(.*?)\\b/");
-        Matcher matcher = pattern.matcher(url);
-
-        return matcher;
-    }
-
-    /**
-     *
      * @param requestUrl 사용자의 검색 url
      * @param provider 검색 요청 url의 BASE 주소
      * @return endpoint, 검색url, format 타입을 더한 url
@@ -85,9 +124,9 @@ public class OembedServiceImpl implements OembedService{
      * @throws ParseException
      */
     @Override
-    public String getRequest(String requestUrl, String provider) throws IOException, ParseException {
+    public String getRequest(String requestUrl, String provider) {
 
-        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
+        JSONArray jsonArray = getJsonArr();
 
         String endPoint = "";
         String format = "format=json";

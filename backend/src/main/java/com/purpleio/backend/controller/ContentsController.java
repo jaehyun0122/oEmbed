@@ -1,5 +1,7 @@
 package com.purpleio.backend.controller;
 
+import com.purpleio.backend.exception.InValidProvider;
+import com.purpleio.backend.exception.InValidUrl;
 import com.purpleio.backend.service.OembedService;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONObject;
@@ -9,8 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
-import java.util.regex.Matcher;
 
 @RestController
 @Slf4j
@@ -27,6 +27,10 @@ public class ContentsController {
         log.info("요청 url : {}", request.getParameter("url"));
         String url = request.getParameter("url");
 
+        if(!oembedService.isValidUrl(url)){
+            throw new InValidUrl("유효하지 않은 URL 입니다.");
+        }
+
         // request에서 provider 파싱
         String provider = oembedService.getProvider(url);
         log.info("provider : {}", provider);
@@ -42,7 +46,7 @@ public class ContentsController {
             response = oembedService.getResponse(requestUrl);
         }else{
             log.info("provider 매칭 실패");
-            throw new Exception();
+            throw new InValidProvider("제공하지 않는 플랫폼 입니다.");
         }
 
         return new ResponseEntity<>(response, HttpStatus.OK);

@@ -1,27 +1,28 @@
-package com.purpleio.backend.controller;
+package com.purpleio.backend.service;
 
-import jdk.nashorn.internal.runtime.regexp.joni.Regex;
 import org.assertj.core.api.Assertions;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 import org.junit.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-@SpringBootTest
-public class ContentsControllerTest {
+import static org.junit.Assert.*;
+
+public class OembedServiceImplTest {
 
     @Test
     public void getProvider() throws IOException, ParseException {
@@ -37,12 +38,6 @@ public class ContentsControllerTest {
                 Assertions.assertThat(group.substring(0, group.indexOf("."))).isEqualTo("twitter");
             }
         }else System.out.println("miss");
-    }
-
-    @Test
-    public void searchProvider() {
-        ClassPathResource resource = new ClassPathResource("provider.json");
-        Assertions.assertThat(resource.getFilename()).isEqualTo("provider.json");
     }
 
     @Test
@@ -88,7 +83,6 @@ public class ContentsControllerTest {
 
         URL url = null;
         HttpURLConnection connection = null;
-        StringBuilder sb = null;
         BufferedReader br = null;
         JSONObject response = null;
         try{
@@ -100,7 +94,6 @@ public class ContentsControllerTest {
             connection.connect();
 
             br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
-            sb = new StringBuilder();
             String line;
 
             while((line = br.readLine()) != null){
@@ -124,36 +117,42 @@ public class ContentsControllerTest {
 
     }
 
-    @Test
-    public void pattern(){
-        String url = "https://twitter.com/hellopolicy/status/867177144815804416";
-        String[] strArr = new String[]{
-                "https://twitter.com/*",
-                "https://twitter.com/*/status/*",
-                "https://*.twitter.com/*/status/*"
-        };
 
-        for(String str : strArr){
-            if(Pattern.compile(str).matcher(url).find()){
-                System.out.println(str);
+    // MalformedURLException : new url
+    @Test
+    public void getJson() throws MalformedURLException {
+        URL url = new URL("https://oembed.com/providers.json");
+        HttpURLConnection connection = null;
+        BufferedReader br = null;
+        StringBuffer sb = new StringBuffer();
+        JSONArray response = null;
+
+        try {
+            connection = (HttpURLConnection) url.openConnection();
+
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Content-type", "application/json");
+            connection.connect();
+
+            br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
+            String line;
+            int idx = 0;
+            while((line = br.readLine()) != null){
+                sb.append(line);
             }
-        }
-    }
+            JSONParser parser = new JSONParser();
+            JSONArray jsonArray = (JSONArray) parser.parse(sb.toString());
 
-    @Test
-    public void getProviderList() throws IOException, ParseException {
-        ClassPathResource resource = new ClassPathResource("provider.json");
-        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
-
-        ArrayList<String> result = new ArrayList<>();
-
-        for (Object o : jsonArray) {
-            JSONObject jsonObject = (JSONObject) o;
-            String provider_name = jsonObject.get("provider_name").toString();
-            result.add(provider_name);
+        } catch (ProtocolException e) {
+            e.printStackTrace();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ParseException e) {
+            e.printStackTrace();
         }
 
-        Assertions.assertThat(result.size()).isEqualTo(288);
-    }
 
+    }
 }
