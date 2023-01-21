@@ -27,7 +27,7 @@ public class OembedServiceImpl implements OembedService{
 
     @Override
     public Boolean isValidUrl(String url) {
-        Matcher matcher = Pattern.compile("/(http(s)?:\\/\\/)([a-z0-9\\w]+\\.*)+[a-z0-9]{2,4}/gi").matcher(url);
+        Matcher matcher = Pattern.compile("^((http|https)://)?(www.)?([a-zA-Z0-9]+)\\.[a-z]+([a-zA-z0-9.?#]+)?").matcher(url);
         if(matcher.find()){
             return true;
         }

@@ -28,6 +28,7 @@ public class ContentsController {
         String url = request.getParameter("url");
 
         if(!oembedService.isValidUrl(url)){
+            log.info("유효하지 않은 URL");
             throw new InValidUrl("유효하지 않은 URL 입니다.");
         }
 
