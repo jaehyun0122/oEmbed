@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,6 +24,43 @@ import java.util.regex.Pattern;
 public class OembedServiceImpl implements OembedService{
 
     static final ClassPathResource resource = new ClassPathResource("provider.json");
+
+    @Override
+    public String getProvider(String url) throws Exception {
+        Matcher matcher = Pattern.compile("(//)(.*?)(/)").matcher(url);
+
+        if(matcher.find()){
+            String group = matcher.group(2);
+            if(group.startsWith("www.")){
+                return group.substring(4, group.indexOf(".com"));
+            }else{
+                return group.substring(0, group.indexOf("."));
+            }
+        } else throw new Exception();
+
+    }
+
+    @Override
+    public Boolean isValidProvider(ArrayList<String> list, String provider) {
+        for(String providers : list){
+            if(provider.equalsIgnoreCase(providers)) return true;
+        }
+        return false;
+    }
+
+    @Override
+    public ArrayList<String> getProviderList() throws IOException, ParseException {
+        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
+        ArrayList<String> result = new ArrayList<>();
+
+        for (Object o : jsonArray) {
+            JSONObject jsonObject = (JSONObject) o;
+            String provider_name = jsonObject.get("provider_name").toString();
+            result.add(provider_name);
+        }
+
+        return result;
+    }
 
     /**
      *
@@ -40,64 +78,37 @@ public class OembedServiceImpl implements OembedService{
     /**
      *
      * @param requestUrl 사용자의 검색 url
-     * @param providerUrl 검색 요청 url의 BASE 주소
+     * @param provider 검색 요청 url의 BASE 주소
      * @return endpoint, 검색url, format 타입을 더한 url
      * @throws GlobalExceptionHandler
      * @throws IOException
      * @throws ParseException
      */
     @Override
-    public String getRequest(String requestUrl, String providerUrl) throws IOException, ParseException {
+    public String getRequest(String requestUrl, String provider) throws IOException, ParseException {
 
         JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
 
         String endPoint = "";
         String format = "format=json";
 
-        /*
-        스키마 패턴을 찾고
-        provider json 데이터에서 endpoints 찾기
-         */
         out:for (Object o : jsonArray) {
             JSONObject object = (JSONObject) o;
             try {
-                /*
-                 schemes 정보 가져오기
-                 */
-                JSONArray endpointArray = (JSONArray) object.get("endpoints");
-                JSONObject endpointObject = (JSONObject) endpointArray.get(0);
-                JSONArray schemesArr = (JSONArray) endpointObject.get("schemes");
+                // provider가 provider_url에 포함되면
+                // endpoint 가져오기
+                if(object.get("provider_url").toString().contains(provider)){
+                    JSONArray endpointsArr = (JSONArray) object.get("endpoints");
+                    JSONObject endpointsObj = (JSONObject) endpointsArr.get(0);
 
-                /*
-                schemes 정보 있으면
-                배열에서 매칭
-                 */
-                if(schemesArr != null){
-                    log.info("schemes not null");
-                    for (Object scheme : schemesArr) {
-                        if(Pattern.compile((String) scheme).matcher(requestUrl).find()){
-                            endPoint = endpointObject.get("url").toString();
+                    endPoint = endpointsObj.get("url").toString();
 
-                            /*
-                            {format}으로 지정시 json으로 지정
-                             */
-                            if(endPoint.contains("{format}")){
-                                endPoint.replace("{format}", "json");
-                            }
-                            log.info("endpoint : {}", endPoint);
-                            break out;
-                        }
+                    if(endPoint.contains("{format}")){
+                        endPoint = endPoint.replace("{format}", "json");
+                        return endPoint+"?url="+requestUrl;
                     }
-                }else{
-                    /*
-                    schemes가 없는 것은
-                    provider_url 비교
-                     */
-                    Object url = endpointObject.get("provider_url");
-                    if(providerUrl.equals(url)){
-                        endPoint = (String) endpointObject.get(url);
-                        break out;
-                    }
+
+                    break;
                 }
             }
             catch (Exception e){

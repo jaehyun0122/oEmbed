@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -23,15 +24,19 @@ import java.util.regex.Pattern;
 public class ContentsControllerTest {
 
     @Test
-    public void getProvider(){
-        String testUrl = "https://www.youtube.com/watch?v=dBD54EZIrZo";
+    public void getProvider() throws IOException, ParseException {
+        String url1 = "https://twitter.com/watch?v=dBD54EZIrZo";
+        String url2 = "https://www.twitter.com/watch?v=dBD54EZIrZo";
 
-        Pattern pattern = Pattern.compile("\\bhttps(.*?)\\b/");
-        Matcher matcher = pattern.matcher(testUrl);
+        Matcher matcher = Pattern.compile("(//)(.*?)(/)").matcher(url1);
         if(matcher.find()){
-            System.out.println(matcher.group(0)); // https://www.youtube.com/
-        }else System.out.println("null");
-
+            String group = matcher.group(2);
+            if(group.startsWith("www.")){
+                Assertions.assertThat(group.substring(4, group.indexOf(".com"))).isEqualTo("twitter");
+            }else{
+                Assertions.assertThat(group.substring(0, group.indexOf("."))).isEqualTo("twitter");
+            }
+        }else System.out.println("miss");
     }
 
     @Test
@@ -42,32 +47,29 @@ public class ContentsControllerTest {
 
     @Test
     public void getRequest() throws IOException, ParseException {
-        String url = "https://www.twitter.com/";
-        String testUrl = "https://www.youtube.com/watch?v=dBD54EZIrZo";;
-
-        ClassPathResource resource = new ClassPathResource("provider.json");
-        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
-
+        String provider = "vimeo";
+        String requestUrl = "https://vimeo.com/20097015";
         String endPoint = "";
         String format = "format=json";
 
+        ClassPathResource resource = new ClassPathResource("provider.json");
+        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
         out:for (Object o : jsonArray) {
             JSONObject object = (JSONObject) o;
             try {
-                // 스키마에서 패턴 찾아서
-                JSONArray endpointArray = (JSONArray) object.get("endpoints");
-                JSONObject endpointObject = (JSONObject) endpointArray.get(0);
-                JSONArray schemesArr = (JSONArray) endpointObject.get("schemes");
+                // provider가 provider_url에 포함되면
+                // endpoint 가져오기
+                if(object.get("provider_url").toString().contains(provider)){
+                    JSONArray endpointsArr = (JSONArray) object.get("endpoints");
+                    JSONObject endpointsObj = (JSONObject) endpointsArr.get(0);
+                    endPoint = endpointsObj.get("url").toString();
 
-                if(schemesArr != null){
-                    for (Object o1 : schemesArr) {
-                        if(Pattern.compile((String) o1).matcher(testUrl).find()){
-                            endPoint = endpointObject.get("url").toString();
-                            System.out.println(endPoint);
-
-                            break out;
-                        }
+                    if(endPoint.contains("{format}")){
+                        endPoint = endPoint.replace("{format}", "json");
+                        System.out.println(endPoint);
                     }
+
+                    break;
                 }
             }
             catch (Exception e){
@@ -75,43 +77,8 @@ public class ContentsControllerTest {
             }
         }
 
-    }
+        System.out.println(endPoint+"?url="+requestUrl+"&"+format);
 
-    @Test
-    public void schemesMatch() throws IOException, ParseException {
-        String url = "https://www.youtube.com/watch?v=dBD54EZIrZo";
-        String regex = "https://*.youtube.com/watch*";
-
-        System.out.println(Pattern.compile(regex).matcher(url));
-//        String youtubeU = "https://www.youtube.com/watch?v=dBD54EZIrZo";
-//        String twitterU = "https://twitter.com/hellopolicy/status/867177144815804416";
-//
-        String[] youtube = {
-                "https://*.youtube.com/watch*",
-                "https://*.youtube.com/v/*",
-                "https://youtu.be/*",
-                "https://*.youtube.com/playlist?list=*",
-                "https://youtube.com/playlist?list=*",
-                "https://*.youtube.com/shorts*"
-        };
-//
-//        String[] twitter={
-//                "https://twitter.com/*",
-//                "https://twitter.com/*/status/*",
-//                "https://*.twitter.com/*/status/*"
-//        };
-//
-//        for(String pattern : twitter){
-//            Pattern pattern1 = Pattern.compile(pattern);
-//            Matcher matcher = pattern1.matcher(twitterU);
-//
-//            if(matcher.find()){
-//                System.out.println("matching");
-//                System.out.println(pattern);
-//                return;
-//            }
-//        }
-//        System.out.println("no matching");
     }
 
 
@@ -173,5 +140,20 @@ public class ContentsControllerTest {
         }
     }
 
+    @Test
+    public void getProviderList() throws IOException, ParseException {
+        ClassPathResource resource = new ClassPathResource("provider.json");
+        JSONArray jsonArray = (JSONArray) new JSONParser().parse(new InputStreamReader(resource.getInputStream(), "UTF-8"));
+
+        ArrayList<String> result = new ArrayList<>();
+
+        for (Object o : jsonArray) {
+            JSONObject jsonObject = (JSONObject) o;
+            String provider_name = jsonObject.get("provider_name").toString();
+            result.add(provider_name);
+        }
+
+        Assertions.assertThat(result.size()).isEqualTo(288);
+    }
 
 }

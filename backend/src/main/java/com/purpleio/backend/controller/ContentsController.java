@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 
 @RestController
@@ -24,17 +25,25 @@ public class ContentsController {
     @GetMapping("/contents")
     public ResponseEntity<JSONObject> getResponse(HttpServletRequest request) throws Exception {
         log.info("요청 url : {}", request.getParameter("url"));
-
         String url = request.getParameter("url");
-        Matcher matcher = oembedService.getMatch(url);
+
+        // request에서 provider 파싱
+        String provider = oembedService.getProvider(url);
+        log.info("provider : {}", provider);
         JSONObject response = null;
 
-        if(matcher.find()){
-            log.info("Base url : {}", matcher.group(0));
-            String requestUrl = oembedService.getRequest(url, matcher.group(0));
-            log.info("Oembed 요청 url : {}", requestUrl);
+        // provider_url에 provider 포함하는지
+        if(
+                oembedService.isValidProvider(
+                        oembedService.getProviderList(), provider)
+        ){
+            log.info("provider 매칭 성공");
+            String requestUrl = oembedService.getRequest(url, provider);
             response = oembedService.getResponse(requestUrl);
-        }else throw new Exception();
+        }else{
+            log.info("provider 매칭 실패");
+            throw new Exception();
+        }
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
