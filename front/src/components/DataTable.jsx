@@ -10,17 +10,23 @@ import { TableHead } from '@mui/material';
 export default function DataTable(props) {
   return (
     <TableContainer component={Paper}>
-      <Table sx={{ minWidth: 650 }}>
-        <TableHead />
+      <Table sx={{ minWidth: 650 }} aria-label="simple table" >
+      <TableHead>
+          <TableRow>
+            <TableCell align='center' colSpan={2}>
+              
+            </TableCell>
+          </TableRow>
+        </TableHead>
         <TableBody>
           {props.keys.map((row) => (
             <TableRow
               key={row}
             >
-              <TableCell xs={2}>
+              <TableCell align="right" colSpan={1} >
                 {row}
               </TableCell>
-              <TableCell align="left" colSpan={10}>
+              <TableCell align="center" colSpan={1}>
                 {row == 'html' ? (
                         <div dangerouslySetInnerHTML={ {__html: props.data[row]} }>
                         </div>

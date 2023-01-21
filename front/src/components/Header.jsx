@@ -10,7 +10,7 @@ export default function Header() {
       <AppBar position="static">
         <Toolbar variant="dense">
           <Typography variant="h6" color="inherit" component="div">
-            Oembed
+            oEmbed
           </Typography>
         </Toolbar>
       </AppBar>
