@@ -1,6 +1,7 @@
 package com.purpleio.backend.service;
 
 
+import com.purpleio.backend.exception.InValidUrl;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
@@ -19,7 +20,6 @@ public interface OembedService {
 
     Boolean isValidProvider(ArrayList<String> list, String provider);
 
-    JSONArray getJsonArr();
+    JSONArray getJsonArr() throws InValidUrl;
 
-    Boolean isValidUrl(String url);
 }

@@ -8,11 +8,13 @@ import org.json.simple.JSONObject;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
+@RequestMapping("/contents")
 @Slf4j
 public class ContentsController {
 
@@ -22,15 +24,10 @@ public class ContentsController {
         this.oembedService = oembedService;
     }
 
-    @GetMapping("/contents")
+    @GetMapping
     public ResponseEntity<JSONObject> getResponse(HttpServletRequest request) throws Exception {
         log.info("요청 url : {}", request.getParameter("url"));
         String url = request.getParameter("url");
-
-        if(!oembedService.isValidUrl(url)){
-            log.info("유효하지 않은 URL");
-            throw new InValidUrl("유효하지 않은 URL 입니다.");
-        }
 
         // request에서 provider 파싱
         String provider = oembedService.getProvider(url);

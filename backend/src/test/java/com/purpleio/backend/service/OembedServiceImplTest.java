@@ -1,5 +1,10 @@
 package com.purpleio.backend.service;
 
+import ac.simons.oembed.OembedEndpoint;
+import ac.simons.oembed.OembedResponse;
+import com.purpleio.backend.exception.InValidUrl;
+import net.minidev.json.JSONUtil;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.assertj.core.api.Assertions;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -17,8 +22,12 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -120,12 +129,13 @@ public class OembedServiceImplTest {
 
     // MalformedURLException : new url
     @Test
-    public void getJson() throws MalformedURLException {
+    public void getJson() throws MalformedURLException, InValidUrl {
         URL url = new URL("https://oembed.com/providers.json");
         HttpURLConnection connection = null;
         BufferedReader br = null;
         StringBuffer sb = new StringBuffer();
         JSONArray response = null;
+        JSONArray jsonArray = null;
 
         try {
             connection = (HttpURLConnection) url.openConnection();
@@ -137,22 +147,15 @@ public class OembedServiceImplTest {
             br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "UTF-8"));
             String line;
             int idx = 0;
-            while((line = br.readLine()) != null){
+            while ((line = br.readLine()) != null) {
                 sb.append(line);
             }
             JSONParser parser = new JSONParser();
-            JSONArray jsonArray = (JSONArray) parser.parse(sb.toString());
+            jsonArray = (JSONArray) parser.parse(sb.toString());
 
-        } catch (ProtocolException e) {
+        } catch (IOException| ParseException e) {
             e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
+            throw new InValidUrl("요청에 실패했습니다.");
         }
-
-
     }
 }

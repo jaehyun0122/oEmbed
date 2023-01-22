@@ -1,6 +1,7 @@
 package com.purpleio.backend.service;
 
 import com.purpleio.backend.exception.GlobalExceptionHandler;
+import com.purpleio.backend.exception.InValidProvider;
 import com.purpleio.backend.exception.InValidUrl;
 import lombok.extern.slf4j.Slf4j;
 import org.json.simple.JSONArray;
@@ -12,10 +13,8 @@ import org.springframework.stereotype.Service;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
@@ -25,15 +24,12 @@ import java.util.regex.Pattern;
 @Slf4j
 public class OembedServiceImpl implements OembedService{
 
-    @Override
-    public Boolean isValidUrl(String url) {
-        Matcher matcher = Pattern.compile("^((http|https)://)?(www.)?([a-zA-Z0-9]+)\\.[a-z]+([a-zA-z0-9.?#]+)?").matcher(url);
-        if(matcher.find()){
-            return true;
-        }
-        return false;
-    }
-
+    /**
+     * 사용자 요청 url에서 provider 추출
+     * @param url
+     * @return
+     * @throws Exception
+     */
     @Override
     public String getProvider(String url) throws Exception {
         Matcher matcher = Pattern.compile("(//)(.*?)(/)").matcher(url);
@@ -49,6 +45,12 @@ public class OembedServiceImpl implements OembedService{
 
     }
 
+    /**
+     * provider 목록 확인
+     * @param list
+     * @param provider
+     * @return
+     */
     @Override
     public Boolean isValidProvider(ArrayList<String> list, String provider) {
         for(String providers : list){
@@ -57,8 +59,13 @@ public class OembedServiceImpl implements OembedService{
         return false;
     }
 
+    /**
+     * oEmbed json 데이터 요청
+     * @return
+     * @throws InValidUrl
+     */
     @Override
-    public JSONArray getJsonArr() {
+    public JSONArray getJsonArr() throws InValidUrl {
         URL url = null;
         try {
             url = new URL("https://oembed.com/providers.json");
@@ -87,21 +94,21 @@ public class OembedServiceImpl implements OembedService{
             JSONParser parser = new JSONParser();
             response = (JSONArray) parser.parse(sb.toString());
 
-        } catch (ProtocolException e) {
+        } catch (IOException| ParseException e) {
             e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
+            throw new InValidUrl("요청에 실패했습니다.");
         }
 
         return response;
     }
 
+    /**
+     * provider 목록 가져오기
+     * @return
+     * @throws InValidUrl
+     */
     @Override
-    public ArrayList<String> getProviderList() {
+    public ArrayList<String> getProviderList() throws InValidUrl {
         JSONArray jsonArray = getJsonArr();
         ArrayList<String> result = new ArrayList<>();
 
@@ -124,7 +131,7 @@ public class OembedServiceImpl implements OembedService{
      * @throws ParseException
      */
     @Override
-    public String getRequest(String requestUrl, String provider) {
+    public String getRequest(String requestUrl, String provider) throws InValidUrl {
 
         JSONArray jsonArray = getJsonArr();
 
@@ -152,6 +159,7 @@ public class OembedServiceImpl implements OembedService{
             }
             catch (Exception e){
                 e.printStackTrace();
+                throw new InValidProvider("지원하지 않는 플랫폼입니다.");
             }
         }
 
@@ -165,7 +173,7 @@ public class OembedServiceImpl implements OembedService{
     * @return 검색 결과
      */
     @Override
-    public JSONObject getResponse(String request) {
+    public JSONObject getResponse(String request) throws InValidUrl {
         URL url = null;
         HttpURLConnection connection = null;
         BufferedReader br = null;
@@ -191,14 +199,9 @@ public class OembedServiceImpl implements OembedService{
                 response = (JSONObject) jsonParser.parse(line);
             }
 
-        } catch (MalformedURLException e) {
+        } catch (IOException| ParseException e) {
             e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ParseException e) {
-            e.printStackTrace();
-        } finally {
-            connection.disconnect();
+            throw new InValidUrl("요청에 실패했습니다.");
         }
 
         return response;

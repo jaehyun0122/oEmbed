@@ -21,6 +21,10 @@ dependencies {
     // https://mvnrepository.com/artifact/com.googlecode.json-simple/json-simple
     implementation 'com.googlecode.json-simple:json-simple:1.1.1'
 
+    // https://mvnrepository.com/artifact/eu.michael-simons/java-oembed
+    implementation 'eu.michael-simons:java-oembed:0.8.1'
+
+
 }
 
 tasks.named('test') {
