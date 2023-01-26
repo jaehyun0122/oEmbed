@@ -1,4 +1,4 @@
-instagram oEmbed 기능을 사용할 수 없다면 사용할 수 없는 이유를 적어주세요.
+oEmbed를 활용한 정보제공
 
-=> 앱 검수 과정 약 5일 필요, 개인정보처리방침 URL 필요
-
+backend : springboot
+frontend : React
